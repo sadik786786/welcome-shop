@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import {
   ArrowRight,
   Leaf,
@@ -26,45 +26,37 @@ const trust = ["Quality products", "Easy shopping", "Friendly support"];
 const container = {
   hidden: {},
   show: {
-    transition: { staggerChildren: 0.08, delayChildren: 0.1 },
+    transition: { staggerChildren: 0.06, delayChildren: 0.05 },
   },
 };
 
 const item = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } },
+  hidden: { opacity: 0, y: 10 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] } },
 };
 
 export default function Hero() {
+  const prefersReducedMotion = useReducedMotion();
+
   return (
     <section className="relative min-h-[calc(100vh-64px)] overflow-hidden bg-black">
-      {/* ─── Decorative orbs (dark glass glow) ────────────────── */}
-      <motion.div
-        className="absolute -left-40 -top-40 h-96 w-96 rounded-full bg-blue-500/20 blur-3xl"
-        animate={{ scale: [1, 1.2, 1], x: [0, 30, 0], y: [0, 20, 0] }}
-        transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+      {/* ─── Decorative static orbs (no animation) ─────────────── */}
+      <div
+        className="absolute -left-40 -top-40 h-96 w-96 rounded-full bg-blue-500/20 blur-2xl"
+        aria-hidden="true"
       />
-      <motion.div
-        className="absolute -bottom-40 -right-40 h-96 w-96 rounded-full bg-purple-500/20 blur-3xl"
-        animate={{ scale: [1, 1.15, 1], x: [0, -20, 0], y: [0, -25, 0] }}
-        transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }}
-      />
-      <motion.div
-        className="absolute top-1/2 left-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-500/20 blur-3xl"
-        animate={{ scale: [1, 1.1, 1], x: [0, -10, 0] }}
-        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+      <div
+        className="absolute -bottom-40 -right-40 h-96 w-96 rounded-full bg-purple-500/20 blur-2xl"
+        aria-hidden="true"
       />
 
-      {/* ─── Subtle grid overlay ────────────────────────────────── */}
+      {/* ─── Subtle radial glow overlay (no mask-image) ─────────── */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 opacity-[0.03]"
+        className="pointer-events-none absolute inset-0"
         style={{
-          backgroundImage:
-            "linear-gradient(to right, rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.1) 1px, transparent 1px)",
-          backgroundSize: "48px 48px",
-          maskImage:
-            "radial-gradient(ellipse 80% 60% at 50% 0%, black 40%, transparent 100%)",
+          background:
+            "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(255,255,255,0.05) 0%, transparent 60%)",
         }}
       />
 
@@ -78,10 +70,12 @@ export default function Hero() {
         >
           <motion.div
             variants={item}
-            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3.5 py-1.5 text-sm font-medium text-white shadow-lg backdrop-blur-xl"
+            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3.5 py-1.5 text-sm font-medium text-white shadow-lg backdrop-blur-sm"
           >
             <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75" />
+              {!prefersReducedMotion && (
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75" />
+              )}
               <span className="relative inline-flex h-2 w-2 rounded-full bg-blue-400" />
             </span>
             Everything you need, in one place
@@ -151,17 +145,13 @@ export default function Hero() {
 
         {/* ─── RIGHT VISUAL ────────────────────────────────────── */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.92 }}
+          initial={prefersReducedMotion ? false : { opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.8, delay: 0.25, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.5, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
           className="relative mx-auto w-full max-w-lg"
         >
           {/* ─── Main glass card (dark) ─────────────────────────── */}
-          <motion.div
-            animate={{ y: [0, -6, 0] }}
-            transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-            className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-white/5 shadow-2xl shadow-black/50 backdrop-blur-xl"
-          >
+          <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-white/5 shadow-2xl shadow-black/50 backdrop-blur-sm">
             <div className="relative aspect-[4/3] w-full">
               <Image
                 src="/images/hero-products.png"
@@ -169,9 +159,12 @@ export default function Hero() {
                 fill
                 priority
                 sizes="(max-width: 1024px) 100vw, 512px"
+                quality={80}
+                placeholder="blur"
+                blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
                 className="object-cover opacity-80"
               />
-              <div className="absolute left-4 top-4 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white backdrop-blur-md">
+              <div className="absolute left-4 top-4 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white backdrop-blur-sm">
                 WelcomeShop
               </div>
             </div>
@@ -179,27 +172,22 @@ export default function Hero() {
             {/* ─── Category strip (dark glass tiles) ───────────── */}
             <div className="grid grid-cols-2 gap-px bg-white/10 sm:grid-cols-4">
               {categories.map(({ icon: Icon, name, note }) => (
-                <motion.div
+                <div
                   key={name}
-                  whileHover={{ scale: 1.04, backgroundColor: "rgba(255,255,255,0.1)" }}
-                  className="group cursor-default bg-white/5 p-4 backdrop-blur-sm transition-all duration-300"
+                  className="group cursor-default bg-white/5 p-4 transition-colors duration-300 hover:bg-white/10"
                 >
                   <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 text-blue-400 transition-colors group-hover:bg-blue-600 group-hover:text-white">
                     <Icon className="h-4 w-4" />
                   </span>
                   <p className="mt-3 text-sm font-semibold text-white">{name}</p>
                   <p className="text-xs text-slate-400">{note}</p>
-                </motion.div>
+                </div>
               ))}
             </div>
-          </motion.div>
+          </div>
 
-          {/* ─── Floating badge 1 (dark glass) ──────────────────── */}
-          <motion.div
-            animate={{ y: [0, -10, 0] }}
-            transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute -right-3 top-8 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/10 px-4 py-3 shadow-xl backdrop-blur-xl sm:-right-6"
-          >
+          {/* ─── Floating badge 1 (static, no animation) ────────── */}
+          <div className="absolute -right-3 top-8 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/10 px-4 py-3 shadow-xl backdrop-blur-sm sm:-right-6">
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-blue-400">
               <Truck className="h-4 w-4" />
             </span>
@@ -207,19 +195,15 @@ export default function Hero() {
               <p className="text-[11px] text-slate-400">Shopping made</p>
               <p className="text-sm font-bold text-white">Simple & easy</p>
             </div>
-          </motion.div>
+          </div>
 
-          {/* ─── Floating badge 2 (dark glass) ──────────────────── */}
-          <motion.div
-            animate={{ y: [0, 10, 0] }}
-            transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute -bottom-5 -left-3 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/10 px-4 py-3 shadow-xl backdrop-blur-xl sm:-left-6"
-          >
+          {/* ─── Floating badge 2 (static, no animation) ────────── */}
+          <div className="absolute -bottom-5 -left-3 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/10 px-4 py-3 shadow-xl backdrop-blur-sm sm:-left-6">
             <div className="text-left">
               <p className="text-[11px] text-slate-400">Wide variety</p>
               <p className="text-sm font-bold text-white">Categories</p>
             </div>
-          </motion.div>
+          </div>
         </motion.div>
       </div>
     </section>
