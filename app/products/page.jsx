@@ -17,7 +17,7 @@ export default async function ProductsPage({ searchParams }) {
 
   const categorySelection = category ? "categories!inner" : "categories";
   let query = supabase.from("products").select(`
-    id, name, slug, description, price, created_at,
+    id, name, slug, price,
     ${categorySelection} (id, name, slug),
     product_images (id, image_url, created_at)
   `);
