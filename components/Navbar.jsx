@@ -10,8 +10,9 @@ import {
   Package,
   LogOut,
   ChevronRight,
+  Shield, // ← NEW: import Shield icon
 } from "lucide-react";
-import {createClient} from "@/app/lib/supabase/client";
+import { createClient } from "@/app/lib/supabase/client";
 import { useRouter } from "next/navigation";
 
 const navLinks = [
@@ -84,19 +85,21 @@ export default function Navbar() {
   useEffect(() => {
     // Get initial session
     const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       setUser(session?.user ?? null);
       setIsLoading(false);
     };
     getSession();
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setUser(session?.user ?? null);
-        setIsLoading(false);
-      }
-    );
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      setIsLoading(false);
+    });
 
     return () => subscription.unsubscribe();
   }, [supabase]);
@@ -134,11 +137,13 @@ export default function Navbar() {
   };
 
   // ─── Derived state ────────────────────────────────────
-  const firstName = user?.user_metadata?.full_name?.split(" ")[0] ?? 
-                   user?.email?.split("@")[0] ?? 
-                   "Account";
+  const firstName =
+    user?.user_metadata?.full_name?.split(" ")[0] ??
+    user?.email?.split("@")[0] ??
+    "Account";
   const displayName = user?.user_metadata?.full_name ?? user?.email ?? "Guest";
   const userAvatar = user?.user_metadata?.avatar_url ?? null;
+  const isAdmin = user?.user_metadata?.role === "admin"; // ← NEW: check admin role
 
   // ─── Render ──────────────────────────────────────────
   if (isLoading) {
@@ -173,15 +178,15 @@ export default function Navbar() {
       <header
         className={`
           sticky top-0 z-50 w-full transition-all duration-300
-          ${isScrolled
-            ? "border-b border-white/20 bg-black/40 shadow-2xl backdrop-blur-xl"
-            : "border-b border-white/5 bg-black/20 backdrop-blur-md"
+          ${
+            isScrolled
+              ? "border-b border-white/20 bg-black/40 shadow-2xl backdrop-blur-xl"
+              : "border-b border-white/5 bg-black/20 backdrop-blur-md"
           }
         `}
       >
         <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
           <div className="flex h-16 items-center justify-between gap-3">
-
             {/* ─── Logo ────────────────────────────────── */}
             <Link
               href="/"
@@ -213,7 +218,6 @@ export default function Navbar() {
 
             {/* ─── Right Actions ──────────────────────── */}
             <div className="flex items-center gap-2">
-
               {/* User Menu */}
               <div ref={userMenuRef} className="relative">
                 <button
@@ -273,35 +277,81 @@ export default function Navbar() {
                           {user ? displayName : "Hello, Guest"}
                         </p>
                         <p className="truncate text-xs text-white/60">
-                          {user ? user.email : "Sign in to access your account"}
+                          {user
+                            ? user.email
+                            : "Sign in to access your account"}
                         </p>
                       </div>
                     </div>
+<div className="mt-2 border-t border-white/10 pt-2">
+                          <Link
+                            href="/admin"
+                            onClick={() => setIsUserMenuOpen(false)}
+                            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+                          >
+                            <Shield className="h-4 w-4 text-white/40" />
+                            Admin
+                          </Link>
+                        </div>
+                    {/* ─── NEW: Admin button ────────────────── */}
+                    {user && isAdmin && (
+                      <>
+                        
+                        <div className="mt-2 border-t border-white/10 pt-2">
+                          {/* Auth action */}
+                          {user ? (
+                            <button
+                              type="button"
+                              onClick={handleSignOut}
+                              disabled={isLoading}
+                              className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-red-300 transition-colors hover:bg-red-500/10 hover:text-red-200 disabled:opacity-50"
+                            >
+                              <LogOut className="h-4 w-4" />
+                              {isLoading ? "Signing out..." : "Sign out"}
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={handleSignIn}
+                              disabled={isLoading}
+                              className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-3 py-2.5 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:bg-primary/90 hover:shadow-xl disabled:opacity-50"
+                            >
+                              {isLoading
+                                ? "Signing in..."
+                                : "Sign in with Google"}
+                            </button>
+                          )}
+                        </div>
+                      </>
+                    )}
 
-
-                    {/* Auth action */}
-                    <div className="mt-2 border-t border-white/10 pt-2">
-                      {user ? (
-                        <button
-                          type="button"
-                          onClick={handleSignOut}
-                          disabled={isLoading}
-                          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-red-300 transition-colors hover:bg-red-500/10 hover:text-red-200 disabled:opacity-50"
-                        >
-                          <LogOut className="h-4 w-4" />
-                          {isLoading ? "Signing out..." : "Sign out"}
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={handleSignIn}
-                          disabled={isLoading}
-                          className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-3 py-2.5 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:bg-primary/90 hover:shadow-xl disabled:opacity-50"
-                        >
-                          {isLoading ? "Signing in..." : "Sign in with Google"}
-                        </button>
-                      )}
-                    </div>
+                    {/* ─── If not admin, keep original auth block ── */}
+                    {!isAdmin && (
+                      <div className="mt-2 border-t border-white/10 pt-2">
+                        {user ? (
+                          <button
+                            type="button"
+                            onClick={handleSignOut}
+                            disabled={isLoading}
+                            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-red-300 transition-colors hover:bg-red-500/10 hover:text-red-200 disabled:opacity-50"
+                          >
+                            <LogOut className="h-4 w-4" />
+                            {isLoading ? "Signing out..." : "Sign out"}
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={handleSignIn}
+                            disabled={isLoading}
+                            className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-3 py-2.5 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:bg-primary/90 hover:shadow-xl disabled:opacity-50"
+                          >
+                            {isLoading
+                              ? "Signing in..."
+                              : "Sign in with Google"}
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -383,28 +433,20 @@ export default function Navbar() {
               <ChevronRight className="h-4 w-4 text-white/40" />
             </Link>
           ))}
-
-          {user && (
             <>
               <div className="my-2 border-t border-white/10" />
-              <Link
-                href="/profile"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-white/80 transition-colors hover:bg-white/10 hover:text-white"
-              >
-                <User className="h-4 w-4 text-white/40" />
-                My Profile
-              </Link>
-              <Link
-                href="/orders"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-white/80 transition-colors hover:bg-white/10 hover:text-white"
-              >
-                <Package className="h-4 w-4 text-white/40" />
-                Orders
-              </Link>
+              {/* ─── NEW: Admin link in mobile menu ── */}
+              
+                <Link
+                  href="/admin"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+                >
+                  <Shield className="h-4 w-4 text-white/40" />
+                  Admin
+                </Link>
+              
             </>
-          )}
         </nav>
 
         {/* Auth footer */}
@@ -432,6 +474,20 @@ export default function Navbar() {
                   </p>
                 </div>
               </div>
+              <>
+              <div className="my-2 border-t border-white/10" />
+              {/* ─── NEW: Admin link in mobile menu ── */}
+              
+                <Link
+                  href="/admin"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+                >
+                  <Shield className="h-4 w-4 text-white/40" />
+                  Admin
+                </Link>
+              
+            </>
               <button
                 type="button"
                 onClick={handleSignOut}
@@ -457,10 +513,18 @@ export default function Navbar() {
 
       <style jsx>{`
         @keyframes float {
-          0% { transform: translate(0, 0) scale(1); }
-          33% { transform: translate(30px, -20px) scale(1.05); }
-          66% { transform: translate(-20px, 30px) scale(0.95); }
-          100% { transform: translate(0, 0) scale(1); }
+          0% {
+            transform: translate(0, 0) scale(1);
+          }
+          33% {
+            transform: translate(30px, -20px) scale(1.05);
+          }
+          66% {
+            transform: translate(-20px, 30px) scale(0.95);
+          }
+          100% {
+            transform: translate(0, 0) scale(1);
+          }
         }
         .animate-\\[float_12s_ease-in-out_infinite\\] {
           animation: float 12s ease-in-out infinite;
