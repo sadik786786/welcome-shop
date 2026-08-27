@@ -408,14 +408,7 @@ export default function Navbar() {
               Welcome<span className="text-primary">Shop</span>
             </span>
           </Link>
-          <button
-            type="button"
-            onClick={() => setIsMobileMenuOpen(false)}
-            className="rounded-lg p-2 text-white/60 transition-colors hover:bg-white/10 hover:text-white"
-            aria-label="Close menu"
-          >
-            <X className="h-5 w-5" />
-          </button>
+          
         </div>
 
         <nav
