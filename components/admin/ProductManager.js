@@ -4,6 +4,58 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 
+// ----- Toast component (auto‑dismiss) -----
+function Toast({ message, onClose }) {
+  useEffect(() => {
+    const timer = setTimeout(onClose, 5000);
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  const bgColor = message.type === "success" ? "bg-emerald-500/90" : "bg-rose-500/90";
+  return (
+    <div
+      className={`fixed top-4 left-1/2 z-50 -translate-x-1/2 rounded-2xl ${bgColor} px-6 py-3 text-white shadow-2xl backdrop-blur-sm transition-all`}
+    >
+      {message.text}
+      <button onClick={onClose} className="ml-4 text-white/70 hover:text-white">
+        ✕
+      </button>
+    </div>
+  );
+}
+
+// ----- Confirmation Modal -----
+function ConfirmModal({ isOpen, onConfirm, onCancel, isLoading }) {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+      <div className="w-full max-w-sm rounded-2xl border border-white/30 bg-white/80 p-6 shadow-2xl backdrop-blur-xl">
+        <h3 className="text-lg font-semibold text-slate-800">Delete Product</h3>
+        <p className="mt-2 text-sm text-slate-600">
+          Are you sure you want to delete this product? This action cannot be undone.
+        </p>
+        <div className="mt-6 flex justify-end gap-3">
+          <button
+            onClick={onCancel}
+            className="rounded-lg border border-white/20 bg-white/20 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-white/40"
+            disabled={isLoading}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className="rounded-lg bg-rose-600 px-4 py-2 text-sm font-medium text-white shadow-lg transition hover:bg-rose-700"
+            disabled={isLoading}
+          >
+            {isLoading ? "Deleting…" : "Delete"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ----- Main Component -----
 export default function ProductManager() {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -11,6 +63,14 @@ export default function ProductManager() {
   const [deleteLoading, setDeleteLoading] = useState(null);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
+
+  // Custom toast state
+  const [toast, setToast] = useState(null);
+  // Confirmation modal state
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    productId: null,
+  });
 
   async function fetchData() {
     try {
@@ -35,7 +95,7 @@ export default function ProductManager() {
       setCategories(categoriesData);
     } catch (error) {
       console.error("Fetch products error:", error);
-      alert(error.message);
+      setToast({ type: "error", text: error.message });
     } finally {
       setLoading(false);
     }
@@ -45,22 +105,36 @@ export default function ProductManager() {
     fetchData();
   }, []);
 
-  async function handleDelete(id) {
-    const confirmed = window.confirm("Are you sure you want to delete this product?");
-    if (!confirmed) return;
+  // Actual deletion after confirmation
+  async function handleDeleteConfirmed() {
+    const id = confirmModal.productId;
+    if (!id) return;
 
     try {
       setDeleteLoading(id);
       const response = await fetch(`/api/admin/products/${id}`, { method: "DELETE" });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Delete failed");
+
       setProducts((current) => current.filter((product) => product.id !== id));
+      setToast({ type: "success", text: "Product deleted successfully." });
+      setConfirmModal({ isOpen: false, productId: null });
     } catch (error) {
       console.error("Delete product error:", error);
-      alert(error.message);
+      setToast({ type: "error", text: error.message });
     } finally {
       setDeleteLoading(null);
     }
+  }
+
+  // Open confirmation modal
+  function handleDeleteClick(id) {
+    setConfirmModal({ isOpen: true, productId: id });
+  }
+
+  // Cancel deletion
+  function handleCancelDelete() {
+    setConfirmModal({ isOpen: false, productId: null });
   }
 
   const filteredProducts = products.filter((product) => {
@@ -71,6 +145,17 @@ export default function ProductManager() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-100/90 via-slate-50/90 to-slate-200/90 p-4 md:p-6">
+      {/* Toast notification */}
+      {toast && <Toast message={toast} onClose={() => setToast(null)} />}
+
+      {/* Confirmation modal */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onConfirm={handleDeleteConfirmed}
+        onCancel={handleCancelDelete}
+        isLoading={deleteLoading === confirmModal.productId}
+      />
+
       <div className="mx-auto max-w-7xl space-y-6 md:space-y-8">
         {/* ===== Header ===== */}
         <div className="flex flex-col gap-4 rounded-2xl border border-white/30 bg-white/30 p-4 backdrop-blur-xl shadow-2xl sm:flex-row sm:items-center sm:justify-between md:p-6">
@@ -152,7 +237,9 @@ export default function ProductManager() {
                                   className="h-full w-full object-cover"
                                 />
                               ) : (
-                                <div className="flex h-full items-center justify-center text-xs text-slate-400">No image</div>
+                                <div className="flex h-full items-center justify-center text-xs text-slate-400">
+                                  No image
+                                </div>
                               )}
                             </div>
                             <div>
@@ -179,7 +266,7 @@ export default function ProductManager() {
                               Edit
                             </Link>
                             <button
-                              onClick={() => handleDelete(product.id)}
+                              onClick={() => handleDeleteClick(product.id)}
                               disabled={deleteLoading === product.id}
                               className="rounded-lg border border-red-200/40 bg-red-100/20 px-3 py-1.5 text-sm font-medium text-red-600 backdrop-blur-sm transition hover:bg-red-200/40 disabled:opacity-50"
                             >
