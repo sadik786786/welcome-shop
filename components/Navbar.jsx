@@ -20,7 +20,7 @@ const navLinks = [
   { href: "/products", label: "Products" },
   { href: "/about", label: "About" },
 ];
-
+ const supabase = createClient();
 export default function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -29,7 +29,6 @@ export default function Navbar() {
   const [isLoading, setIsLoading] = useState(true);
 
   const userMenuRef = useRef(null);
-  const supabase = createClient();
   const router = useRouter();
 
   // ─── Effects ──────────────────────────────────────────
@@ -83,26 +82,35 @@ export default function Navbar() {
 
   // ─── Supabase Auth ────────────────────────────────────
   useEffect(() => {
-    // Get initial session
-    const getSession = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      setUser(session?.user ?? null);
-      setIsLoading(false);
-    };
-    getSession();
+  let mounted = true;
 
-    // Listen for auth changes
+  const getSession = async () => {
     const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (mounted) {
       setUser(session?.user ?? null);
       setIsLoading(false);
-    });
+    }
+  };
 
-    return () => subscription.unsubscribe();
-  }, [supabase]);
+  getSession();
+
+  const {
+    data: { subscription },
+  } = supabase.auth.onAuthStateChange((_event, session) => {
+    if (mounted) {
+      setUser(session?.user ?? null);
+      setIsLoading(false);
+    }
+  });
+
+  return () => {
+    mounted = false;
+    subscription.unsubscribe();
+  };
+}, []);
 
   // ─── Auth handlers ────────────────────────────────────
   const handleSignIn = async () => {
